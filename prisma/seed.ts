@@ -1,7 +1,7 @@
-import prisma from '../src/config/database';
+import prisma from "../src/config/database";
 
 async function main() {
-  console.log('Seeding database...');
+  console.log("Seeding database...");
 }
 
 main()
