@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  TRAINER
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum TrainerRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// ─── User ────────────────────────────────────────────────
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses           Course[]
+  enrollments       Enrollment[]
+  ratings           Rating[]
+  wishlists         Wishlist[]
+  discussions       Discussion[]
+  replies           Reply[]
+  orders            Order[]
+  trainerRequest    TrainerRequest?
+  lessonCompletions LessonCompletion[]
+}
+
+// ─── Category ────────────────────────────────────────────
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  courses Course[]
+}
+
+// ─── Course ──────────────────────────────────────────────
+
+model Course {
+  id                Int          @id @default(autoincrement())
+  title             String
+  description       String?
+  price             Float        @default(0)
+  isFree            Boolean      @default(false)
+  thumbnail         String?
+  previewYoutubeUrl String?
+  status            CourseStatus @default(DRAFT)
+  categoryId        Int
+  trainerId         Int
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  category    Category     @relation(fields: [categoryId], references: [id])
+  trainer     User         @relation(fields: [trainerId], references: [id])
+  sections    Section[]
+  enrollments Enrollment[]
+  ratings     Rating[]
+  wishlists   Wishlist[]
+  orderItems  OrderItem[]
+}
+
+// ─── Section ─────────────────────────────────────────────
+
+model Section {
+  id       Int    @id @default(autoincrement())
+  title    String
+  courseId Int
+  order    Int    @default(0)
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+}
+
+// ─── Lesson ──────────────────────────────────────────────
+
+model Lesson {
+  id         Int     @id @default(autoincrement())
+  title      String
+  youtubeUrl String?
+  duration   Int?
+  isPreview  Boolean @default(false)
+  sectionId  Int
+  order      Int     @default(0)
+
+  section     Section            @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  discussions Discussion[]
+  completions LessonCompletion[]
+}
+
+// ─── Enrollment ──────────────────────────────────────────
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  progress  Float    @default(0)
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+// ─── Rating ──────────────────────────────────────────────
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+// ─── Wishlist ────────────────────────────────────────────
+
+model Wishlist {
+  id       Int @id @default(autoincrement())
+  userId   Int
+  courseId Int
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+// ─── TrainerRequest ──────────────────────────────────────
+
+model TrainerRequest {
+  id         Int                  @id @default(autoincrement())
+  userId     Int                  @unique
+  cvUrl      String
+  bio        String
+  experience String
+  status     TrainerRequestStatus @default(PENDING)
+  createdAt  DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─── Discussion ──────────────────────────────────────────
+
+model Discussion {
+  id        Int      @id @default(autoincrement())
+  lessonId  Int
+  userId    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  replies Reply[]
+}
+
+// ─── Reply ───────────────────────────────────────────────
+
+model Reply {
+  id           Int      @id @default(autoincrement())
+  discussionId Int
+  userId       Int
+  comment      String
+  createdAt    DateTime @default(now())
+
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+}
+
+// ─── LessonCompletion ────────────────────────────────────
+
+model LessonCompletion {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  lessonId    Int
+  completed   Boolean  @default(true)
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+// ─── Order ───────────────────────────────────────────────
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  total     Float       @default(0)
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+}
+
+// ─── OrderItem ───────────────────────────────────────────
+
+model OrderItem {
+  id       Int   @id @default(autoincrement())
+  orderId  Int
+  courseId Int
+  price    Float
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id])
+}
