@@ -1,21 +1,28 @@
 {
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "generated"],
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
     "module": "commonjs",
-    "target": "es2023",
-    "lib": ["esnext"],
+    "target": "esnext",
     "types": ["node"],
+    "lib": ["esnext"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+
     "strict": true,
+    "esModuleInterop": true,
     "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "tests", "prisma"]
+    "skipLibCheck": true
+  }
 }
